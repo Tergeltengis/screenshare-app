@@ -19,12 +19,12 @@ const StyledVideo = styled.video`
 
 const Video = (props) => {
   const ref = useRef();
-
+  console.log(props);
   useEffect(() => {
     props.peer.on("stream", (stream) => {
       ref.current.srcObject = stream;
     });
-  }, []);
+  }, [props.peer]);
 
   return <StyledVideo playsInline autoPlay ref={ref} />;
 };
@@ -42,13 +42,16 @@ const Room = (props) => {
   const roomID = props.match.params.roomID;
 
   useEffect(() => {
-    socketRef.current = io.connect("https://server.preview-cd.gansukh.com");
+    socketRef.current = io?.connect("https://172.19.100.31:8000/");
+    console.log(navigator);
     navigator.mediaDevices
       .getUserMedia({ video: videoConstraints, audio: true })
       .then((stream) => {
+        console.log("media");
         userVideo.current.srcObject = stream;
         socketRef.current.emit("join room", roomID);
         socketRef.current.on("all users", (users) => {
+          console.log(users);
           const peers = [];
           users.forEach((userID) => {
             const peer = createPeer(userID, socketRef.current.id, stream);
@@ -75,8 +78,11 @@ const Room = (props) => {
           const item = peersRef.current.find((p) => p.peerID === payload.id);
           item.peer.signal(payload.signal);
         });
+      })
+      .catch((error) => {
+        console.log("aldaa- ", error);
       });
-  }, []);
+  }, [roomID]);
 
   function createPeer(userToSignal, callerID, stream) {
     const peer = new Peer({
@@ -111,10 +117,10 @@ const Room = (props) => {
 
     return peer;
   }
-
+  console.log("peers", peers);
   return (
     <Container>
-      <StyledVideo muted ref={userVideo} autoPlay playsInline />
+      <StyledVideo muted ref={userVideo} autoplay playsInline />
       {peers.map((peer, index) => {
         return <Video key={index} peer={peer} />;
       })}
